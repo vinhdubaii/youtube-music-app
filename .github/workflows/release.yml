@@ -1,0 +1,67 @@
+name: Release
+
+# Chay khi push git tag dang v*.*.* (vd v1.0.0).
+# Build ban release that (co bundle .msi/.exe) va dinh kem vao mot
+# GitHub Release o dang DRAFT — khong tu sinh release notes, de
+# tu viet tay va bam publish thu cong sau.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  release:
+    runs-on: windows-latest
+    # Bat buoc de tauri-action duoc phep tao/ghi vao GitHub Release
+    # (tao release, upload .msi/.exe). Neu repo/org dat mac dinh
+    # GITHUB_TOKEN la read-only thi du co dong nay van bi chan boi
+    # setting o Settings > Actions > General > Workflow permissions —
+    # xem ghi chu ben duoi file nay.
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout yt-music-app
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend deps
+        run: npm ci
+
+      # tauri-action tu goi beforeBuildCommand (gen-icons.mjs) trong luc
+      # build, roi dong goi .msi/.exe, KY (sign) chung bang
+      # TAURI_SIGNING_PRIVATE_KEY, sinh file latest.json (uploadUpdaterJson)
+      # va upload tat ca len GitHub Release.
+      #
+      # latest.json la file ma app tu dong doc de kiem tra ban moi (xem
+      # plugins.updater.endpoints trong tauri.conf.json, tro toi
+      # releases/latest/download/latest.json — API nay chi thay release DA
+      # PUBLISH, nen ban draft o duoi van an toan cho toi khi ban tu tay
+      # bam Publish tren GitHub).
+      - name: Build & attach installer to draft release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "YT Music App ${{ github.ref_name }}"
+          releaseBody: ""
+          releaseDraft: true
+          prerelease: false
+          uploadUpdaterJson: true
