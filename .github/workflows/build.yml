@@ -1,0 +1,47 @@
+name: Build
+
+# Chi de kiem tra khong vo build — khong tao artifact/release.
+# Chay tren moi push va PR vao main. App load thang music.youtube.com
+# (khong con clone/patch web luc build), nen build nay chi con kiem tra
+# gen-icons.mjs + code Rust (main.rs, tauri.conf.json) khong loi.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout yt-music-app
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend deps
+        run: npm ci
+
+      # --debug: build nhanh hon, khong can toi uu. Van phai truyen key ky
+      # (TAURI_SIGNING_PRIVATE_KEY/PASSWORD) vi tauri.conf.json da bat
+      # bundle.createUpdaterArtifacts:true — thieu 2 bien nay la build loi
+      # cung, ke ca ban debug nay, khong chi luc release that.
+      - name: Build Tauri app (debug)
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npm run tauri build -- --debug
