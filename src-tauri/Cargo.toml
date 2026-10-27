@@ -1,0 +1,17 @@
+[package]
+name = "yt-music-app"
+version = "0.1.0"
+description = "YouTube Music desktop app"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-updater = "2"
+# Bat buoc phai khai truc tiep (khong chi qua tauri) — generate_context!()
+# tu sinh code tham chieu thang serde_json:: khi tauri.conf.json co muc
+# "plugins" (repo minh moi co tu luc them updater config). Thieu dong nay
+# se loi bien dich E0433 "cannot find serde_json in the crate root".
+serde_json = "1"

@@ -1,0 +1,75 @@
+/* Titlebar rieng cua yt-music-app.
+ * Namespace toan bo bang #app-titlebar / .app-titlebar-* / .titlebar-btn
+ * de khong bao gio dung do class/id voi CSS cua YouTube Music.
+ * Hoan toan trong suot — khong ve nen, khong tieu de, khong icon app,
+ * chi 3 nut o goc phai tren.
+ */
+
+#app-titlebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 36px;
+  display: flex;
+  align-items: stretch;
+  /* Phai o tren tat ca moi thu cua trang, ke ca #screenFullscreen (z-index:100)
+     va cac nut cua no (fp-collapse, fp-lyrics-toggle). */
+  z-index: 999999;
+  background: transparent;
+  /* Mac dinh KHONG chan click xuong trang ben duoi; chi vung con/spacer
+     va cac nut ben trong moi thuc su bat pointer-events. */
+  pointer-events: none;
+  user-select: none;
+}
+
+#app-titlebar .app-titlebar-spacer {
+  flex: 1;
+  pointer-events: auto; /* day la vung keo cua so */
+}
+
+.app-titlebar-controls {
+  display: flex;
+  pointer-events: auto;
+}
+
+.titlebar-btn {
+  width: 46px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.titlebar-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.titlebar-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.titlebar-btn-close:hover {
+  background: #e81123; /* do chuan cua nut close tren Windows */
+  color: #fff;
+}
+
+/* Khi vao fullscreen that (Tauri setFullscreen, xem titlebar.js), an 3 nut
+   minimize/maximize/close di — fullscreen thi khong con OS chrome nao ca.
+   Vung keo (.app-titlebar-spacer) khong bi anh huong vi no vo hinh san. */
+body.app-is-fullscreen .app-titlebar-controls {
+  display: none;
+}

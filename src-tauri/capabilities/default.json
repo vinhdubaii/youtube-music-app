@@ -1,0 +1,22 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Quyen cho cua so chinh — titlebar tu ve dieu khien minimize/maximize/close/keo cua so, va F11/Esc bat/tat fullscreen that",
+  "windows": ["main"],
+  "remote": {
+    "urls": [
+      "https://music.youtube.com/*",
+      "https://accounts.google.com/*"
+    ]
+  },
+  "permissions": [
+    "core:window:allow-minimize",
+    "core:window:allow-maximize",
+    "core:window:allow-unmaximize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-close",
+    "core:window:allow-start-dragging",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-is-fullscreen"
+  ]
+}
