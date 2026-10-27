@@ -32,7 +32,7 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://github.com/neatbrowser/youtube-music-app/releases/latest/download/latest.json"
+        "https://github.com/vinhdubaii/youtube-music-app/releases/latest/download/latest.json"
       ],
       "windows": {
         "installMode": "quiet"
