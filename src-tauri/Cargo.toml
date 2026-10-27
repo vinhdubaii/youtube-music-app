@@ -8,7 +8,10 @@ edition = "2021"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+# "devtools": bat F12 / Ctrl+Shift+I (DevTools cua WebView2) ca o ban release.
+# Mac dinh Tauri chi bat DevTools o ban debug. Muon go o ban phat hanh that
+# thi xoa "devtools" khoi danh sach nay.
+tauri = { version = "2", features = ["devtools"] }
 tauri-plugin-updater = "2"
 # Bat buoc phai khai truc tiep (khong chi qua tauri) — generate_context!()
 # tu sinh code tham chieu thang serde_json:: khi tauri.conf.json co muc

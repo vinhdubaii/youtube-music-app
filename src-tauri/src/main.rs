@@ -16,53 +16,63 @@
 
 use tauri_plugin_updater::UpdaterExt;
 
-// Noi dung 3 file titlebar duoc nhung thang vao binary luc bien dich —
+// Noi dung 2 file titlebar duoc nhung thang vao binary luc bien dich —
 // include_str!() doc file tai thoi diem compile, khong doc tu dia luc
-// runtime, nen khong can ship kem file .html/.css/.js nao ca.
-const TITLEBAR_HTML: &str = include_str!("../../titlebar/titlebar.html");
+// runtime, nen khong can ship kem file .css/.js nao ca. Markup titlebar do
+// titlebar.js tu dung bang DOM API (khong con file .html).
 const TITLEBAR_CSS: &str = include_str!("../../titlebar/titlebar.css");
 const TITLEBAR_JS: &str = include_str!("../../titlebar/titlebar.js");
 
-/// Ghep CSS + markup + logic cua titlebar + chan chuot phai thanh 1 doan JS
-/// duy nhat, dung lam initialization_script — chay truoc khi trang
-/// (music.youtube.com) duoc parse, nen phai tu cho document.body xuat hien
-/// (DOMContentLoaded) roi moi chen <style> + markup titlebar vao, sau do
-/// chay tiep logic cu cua titlebar.js (bind nut, F11/Esc) — luc do cac phan
-/// tu da ton tai nen document.getElementById(...) hoat dong binh thuong,
-/// giong het truoc day.
+/// Ghep CSS + logic titlebar + chan chuot phai thanh 1 doan JS duy nhat, dung
+/// lam initialization_script — chay truoc khi trang (music.youtube.com)
+/// duoc parse, nen phai doi document.body xuat hien (DOMContentLoaded) roi
+/// moi chen CSS + titlebar vao.
+///
+/// music.youtube.com bat Trusted Types (CSP require-trusted-types-for
+/// 'script'), nen o day TUYET DOI khong gan chuoi vao innerHTML: titlebar.js
+/// dung createElement/createElementNS, con CSS duoc nap bang constructable
+/// stylesheet (adoptedStyleSheets — khong bi CSP style-src chan) va chi lui
+/// ve the <style> neu trinh duyet khong ho tro. Moi loi trong qua trinh chen
+/// duoc bat va ghi ra console ("[titlebar] ...") thay vi im lang.
 ///
 /// Chan chuot phai (contextmenu) o toan trang, tru rieng <input>/<textarea>/
 /// phan tu contenteditable — nhung cho do van giu duoc menu Dan/Copy qua
-/// chuot phai. Khong lien quan gi toi DevTools: F12 da bi tat san o muc
-/// WebView2 vi Cargo.toml khong bat feature "devtools" cua tauri (chi co
-/// hieu luc tren debug build), nen khong can them gi rieng cho phan do.
+/// chuot phai (menu do cung co muc Inspect de mo DevTools). F12 /
+/// Ctrl+Shift+I mo DevTools nho feature "devtools" bat trong Cargo.toml.
 ///
-/// Dung serde_json::to_string de encode CSS/HTML thanh chuoi JS an toan
-/// (tu dong escape dau nhay/xuong dong...), tranh loi neu noi dung co ky
-/// tu dac biet.
+/// Dung serde_json::to_string de encode CSS thanh chuoi JS an toan (tu dong
+/// escape dau nhay/xuong dong...), tranh loi neu noi dung co ky tu dac biet.
 fn titlebar_injection_script() -> String {
     let css_js_string =
         serde_json::to_string(TITLEBAR_CSS).expect("TITLEBAR_CSS la UTF-8 hop le");
-    let html_js_string =
-        serde_json::to_string(TITLEBAR_HTML).expect("TITLEBAR_HTML la UTF-8 hop le");
 
     format!(
         r#"
 (function () {{
+  function injectStyle(cssText) {{
+    try {{
+      var sheet = new CSSStyleSheet();
+      sheet.replaceSync(cssText);
+      document.adoptedStyleSheets = document.adoptedStyleSheets.concat([sheet]);
+    }} catch (err) {{
+      var style = document.createElement("style");
+      style.textContent = cssText;
+      (document.head || document.documentElement).appendChild(style);
+    }}
+  }}
+
   function injectTitlebar() {{
     // Tranh chen 2 lan neu script nay vi ly do gi do chay lai.
     if (document.getElementById("app-titlebar")) return;
 
-    var style = document.createElement("style");
-    style.textContent = {css};
-    document.head.appendChild(style);
+    try {{
+      injectStyle({css});
 
-    var wrapper = document.createElement("div");
-    wrapper.innerHTML = {html};
-    document.body.insertBefore(wrapper.firstElementChild, document.body.firstChild);
-
-    // --- Logic cua titlebar.js, giu nguyen 100% ---
+      // --- Logic cua titlebar.js (tu dung markup + bind nut, F11/Esc) ---
 {js}
+    }} catch (err) {{
+      console.error("[titlebar] chen titlebar that bai:", err);
+    }}
   }}
 
   if (document.readyState === "loading") {{
@@ -89,7 +99,6 @@ fn titlebar_injection_script() -> String {
 }})();
 "#,
         css = css_js_string,
-        html = html_js_string,
         js = TITLEBAR_JS,
     )
 }

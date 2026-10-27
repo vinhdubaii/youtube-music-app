@@ -20,7 +20,7 @@ nhúng thẳng vào binary lúc compile (`include_str!`) và tiêm vào trang b�
 ## Cấu trúc
 
 ```
-titlebar/                 Titlebar tự vẽ (html/css/js) — nhúng vào binary,
+titlebar/                 Titlebar tự vẽ (css/js, dựng bằng DOM API) — nhúng vào binary,
                             tiêm vào trang lúc runtime (xem main.rs)
 src-tauri/
   src/main.rs             Tự tạo cửa sổ (để tiêm titlebar script) +
@@ -154,3 +154,19 @@ tách titlebar thành webview riêng nằm trên webview YouTube Music.
 
 Lưu ý khác: đăng nhập Google trong webview nhúng đôi khi bị Google chặn hoặc
 yêu cầu xác minh thêm — cần thử đăng nhập thật trên Windows để biết.
+
+## Titlebar và Trusted Types
+
+music.youtube.com bật Trusted Types (`require-trusted-types-for 'script'`),
+nên **không được gán chuỗi vào `innerHTML`** trong script tiêm: trình duyệt
+chặn và titlebar sẽ không bao giờ hiện (không có 3 nút, không kéo được cửa
+sổ). Vì vậy `titlebar/titlebar.js` dựng markup bằng `createElement` /
+`createElementNS`, còn CSS được nạp qua `adoptedStyleSheets`. Lỗi khi chèn
+được ghi ra console với tiền tố `[titlebar]`.
+
+## DevTools
+
+`Cargo.toml` bật feature `devtools` của Tauri nên `F12` / `Ctrl+Shift+I` mở
+DevTools cả ở bản release. Chuột phải bị chặn trừ trong ô nhập liệu (ô tìm
+kiếm có mục Inspect). Muốn tắt DevTools ở bản phát hành thật, xoá
+`"devtools"` khỏi `features` của `tauri` trong `src-tauri/Cargo.toml`.

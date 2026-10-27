@@ -1,6 +1,11 @@
 // titlebar.js — duoc nhung vao binary luc bien dich va tiem vao trang
 // music.youtube.com (xem src-tauri/src/main.rs). Hoan toan doc lap voi logic cua trang goc,
-// chi thao tac tren cac phan tu #app-titlebar do titlebar.html tao ra.
+// chi thao tac tren cac phan tu #app-titlebar do chinh file nay tao ra.
+//
+// Markup titlebar duoc dung bang DOM API (createElement/createElementNS),
+// KHONG dung innerHTML: music.youtube.com bat Trusted Types
+// (require-trusted-types-for 'script') nen gan chuoi vao innerHTML bi chan
+// va nem loi — titlebar khong bao gio hien ra.
 //
 // Dung window.__TAURI__ (bat qua "app.withGlobalTauri": true trong
 // tauri.conf.json) thay vi cau lenh "import", vi trang nay khong co
@@ -8,6 +13,62 @@
 // nay duoc nap thang nhu 1 <script> tinh binh thuong.
 
 (function () {
+  const SVG_NS = "http://www.w3.org/2000/svg";
+
+  function svgIcon(shapes) {
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    shapes.forEach(function (shape) {
+      const node = document.createElementNS(SVG_NS, shape[0]);
+      Object.keys(shape[1]).forEach(function (name) {
+        node.setAttribute(name, shape[1][name]);
+      });
+      svg.appendChild(node);
+    });
+    return svg;
+  }
+
+  function makeButton(id, label, extraClass, shapes) {
+    const btn = document.createElement("button");
+    btn.id = id;
+    btn.className = "titlebar-btn" + (extraClass ? " " + extraClass : "");
+    btn.type = "button";
+    btn.setAttribute("aria-label", label);
+    btn.appendChild(svgIcon(shapes));
+    return btn;
+  }
+
+  function buildTitlebar() {
+    const bar = document.createElement("div");
+    bar.id = "app-titlebar";
+    bar.setAttribute("data-tauri-drag-region", "");
+
+    const spacer = document.createElement("div");
+    spacer.className = "app-titlebar-spacer";
+    spacer.setAttribute("data-tauri-drag-region", "");
+
+    const controls = document.createElement("div");
+    controls.className = "app-titlebar-controls";
+    controls.appendChild(makeButton("titlebar-min", "Thu nhỏ", "", [
+      ["line", { x1: "5", y1: "12", x2: "19", y2: "12" }],
+    ]));
+    controls.appendChild(makeButton("titlebar-max", "Phóng to", "", [
+      ["rect", { x: "5", y: "5", width: "14", height: "14", rx: "1" }],
+    ]));
+    controls.appendChild(makeButton("titlebar-close", "Đóng", "titlebar-btn-close", [
+      ["line", { x1: "6", y1: "6", x2: "18", y2: "18" }],
+      ["line", { x1: "6", y1: "18", x2: "18", y2: "6" }],
+    ]));
+
+    bar.appendChild(spacer);
+    bar.appendChild(controls);
+    return bar;
+  }
+
+  // Chen titlebar TRUOC khi kiem tra window.__TAURI__ — neu IPC khong co
+  // thi it nhat van thay thanh titlebar (nut chua bam duoc) thay vi mat han.
+  document.body.insertBefore(buildTitlebar(), document.body.firstChild);
+
   const tauriWindow = window.__TAURI__ && window.__TAURI__.window;
   if (!tauriWindow) {
     console.warn("[titlebar] window.__TAURI__.window khong ton tai — " +
